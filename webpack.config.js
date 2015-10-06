@@ -9,6 +9,9 @@ console.log('root path is %s', ROOT_PATH);
 
 var common = {
     entry: path.resolve(ROOT_PATH, 'app'),
+    resolve: {
+        extensions: ['', '.js', '.jsx']
+    },
     output: {
         path: path.resolve(ROOT_PATH, 'build'),
         filename: 'bundle.js'
@@ -22,9 +25,6 @@ var common = {
             }
         ]
     },
-    resolve: {
-        extensions: ['', '.js', '.jsx']
-    },
     plugins: [
         new HtmlwebpackPlugin({
             title: 'Kanban app'
@@ -35,7 +35,6 @@ var common = {
 if (TARGET === 'start' || !TARGET) {
     module.exports = merge(common, {
         devtool: 'eval-source-map',
-
         devServer: {
             historyApiFallback: true,
             hot: true,
@@ -43,10 +42,7 @@ if (TARGET === 'start' || !TARGET) {
             progress: true
         },
         plugins: [
-            new webpack.HotModuleReplacementPlugin(),
-            new HtmlwebpackPlugin({
-                title: 'Kanban app'
-            })
+            new webpack.HotModuleReplacementPlugin()
         ]
     });
 }
@@ -59,7 +55,7 @@ if (TARGET === 'start' || !TARGET) {
             loaders: [
                 {
                     test: /\.jsx?$/,
-                    loaders: ['babel'],
+                    loaders: ['react-hot', 'babel'],
                     include: path.resolve(ROOT_PATH, 'app')
                 }
             ]
