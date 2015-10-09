@@ -12,6 +12,6 @@ export default class Lanes extends React.Component {
     }
 
     renderLane(lane) {
-        return <Lane className='lane' key={`lane${lane.id}`} {...lane} />;
+        return <Lane className='lane' key={`lane${lane.id}`} lane={lane} />;
     }
 }
