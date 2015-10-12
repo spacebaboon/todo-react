@@ -64,7 +64,7 @@ class LaneStore {
         const lane = lanes[targetId];
 
         if (lane.notes.indexOf(noteId) === -1) {
-            lanes.notes.push(noteId);
+            lane.notes.push(noteId);
 
             this.setState({lanes});
         } else {
