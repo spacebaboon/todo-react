@@ -1,109 +1,138 @@
 import uuid from 'node-uuid';
+import update from 'react/lib/update';
 import alt from '../libs/alt';
 import LaneActions from '../actions/LaneActions';
 import NoteStore from './NoteStore';
 
 class LaneStore {
-    constructor() {
-        this.bindActions(LaneActions);
+  constructor() {
+    this.bindActions(LaneActions);
 
-        this.lanes = [];
+    this.lanes = [];
+  }
+
+  create(lane) {
+    const lanes = this.lanes;
+
+    lane.id = uuid.v4();
+    lane.notes = lane.notes || [];
+
+    this.setState({
+      lanes: lanes.concat(lane)
+    });
+  }
+
+  update({id, name}) {
+    const lanes = this.lanes;
+    const targetId = this.findLane(id);
+
+    if (targetId < 0) {
+      return;
     }
 
-    create(lane) {
-        const lanes = this.lanes;
+    lanes[targetId].name = name;
 
-        lane.id = uuid.v4();
-        lane.notes = lane.notes || [];
+    this.setState({lanes});
+  }
 
-        this.setState({
-            lanes: lanes.concat(lane)
-        });
+  delete(id) {
+    const lanes = this.lanes;
+    const targetId = this.findLane(id);
+
+    if (targetId < 0) {
+      return;
     }
 
-    update({id, name}) {
-        const lanes = this.lanes;
-        const targetId = this.findLane(id);
+    this.setState({
+      lanes: lanes.slice(0, targetId).concat(lanes.slice(targetId + 1))
+    });
+  }
 
-        if (targetId < 0) {
-            return;
-        }
+  attachToLane({laneId, noteId}) {
+    if (!noteId) {
+      this.waitFor(NoteStore);
 
-        lanes[targetId].name = name;
-
-        this.setState({lanes});
+      noteId = NoteStore.getState().notes.slice(-1)[0].id;
     }
 
-    delete(id) {
-        const lanes = this.lanes;
-        const targetId = this.findLane(id);
+    const lanes = this.lanes;
+    const targetId = this.findLane(laneId);
 
-        if (targetId < 0) {
-            return;
-        }
-
-        this.setState({
-            lanes: lanes.slice(0, targetId).concat(lanes.slice(targetId + 1))
-        });
+    if (targetId < 0) {
+      return;
     }
 
-    attachToLane({laneId, noteId}) {
-        if (!noteId) {
-            this.waitFor(NoteStore);
+    const lane = lanes[targetId];
 
-            noteId = NoteStore.getState().notes.slice(-1)[0].id;
-        }
+    if (lane.notes.indexOf(noteId) === -1) {
+      lane.notes.push(noteId);
 
-        const lanes = this.lanes;
-        const targetId = this.findLane(laneId);
+      this.setState({lanes});
+    } else {
+      console.warn('Already attached note to lane', lanes);
+    }
+  }
 
-        if (targetId < 0) {
-            return;
-        }
+  detachFromLane({laneId, noteId}) {
+    const lanes = this.lanes;
+    const targetId = this.findLane(laneId);
 
-        const lane = lanes[targetId];
-
-        if (lane.notes.indexOf(noteId) === -1) {
-            lane.notes.push(noteId);
-
-            this.setState({lanes});
-        } else {
-            console.warn('Already attached note to lane', lanes);
-        }
+    if (targetId < 0) {
+      return;
     }
 
-    detachFromLane({laneId, noteId}) {
-        const lanes = this.lanes;
-        const targetId = this.findLane(laneId);
+    const lane = lanes[targetId];
+    const notes = lane.notes;
+    const removeIndex = notes.indexOf(noteId);
 
-        if (targetId < 0) {
-            return;
-        }
+    if (removeIndex !== -1) {
+      lanes.notes = notes.slice(0, removeIndex).concat(notes.slice(removeIndex + 1));
 
-        const lane = lanes[targetId];
-        const notes = lane.notes;
-        const removeIndex = notes.indexOf(noteId);
+      this.setState({lanes});
+    } else {
+      console.warn('Failed to remove note from a lane as it didn\'t exist', lanes);
+    }
+  }
 
-        if (removeIndex !== -1) {
-            lanes.notes = notes.slice(0, removeIndex).concat(notes.slice(removeIndex + 1));
+  findLane(id) {
+    const lanes = this.lanes;
+    const laneIndex = lanes.findIndex((lane) => lane.id === id);
 
-            this.setState({lanes});
-        } else {
-            console.warn('Failed to remove note from a lane as it didn\'t exist', lanes);
-        }
+    if (laneIndex < 0) {
+      console.warn('Failed to fine lane', lanes, id);
     }
 
-    findLane(id) {
-        const lanes = this.lanes;
-        const laneIndex = lanes.findIndex((lane) => lane.id === id);
+    return laneIndex;
+  }
 
-        if (laneIndex < 0) {
-            console.warn('Failed to fine lane', lanes, id);
-        }
+    move({sourceId, targetId}) {
+      const lanes = this.lanes;
+      const sourceLane = lanes.filter((lane) => {
+        return lane.notes.indexOf(sourceId) >= 0;
+      })[0];
+      const targetLane = lanes.filter((lane) => {
+        return lane.notes.indexOf(targetId) >= 0;
+      })[0];
+      const sourceNoteIndex = sourceLane.notes.indexOf(sourceId);
+      const targetNoteIndex = targetLane.notes.indexOf(targetId);
 
-        return laneIndex;
+      if (sourceLane === targetLane) {
+        sourceLane.notes = update(sourceLane.notes, {
+          $splice: [
+            [sourceNoteIndex, 1],
+            [targetNoteIndex, 0, sourceId]
+          ]
+        })
+      } else {
+        // get rid of source
+        sourceLane.notes.splice(sourceNoteIndex, 1);
+
+        // and move it to target
+        targetLane.notes.splice(targetNoteIndex, 0, sourceId);
+      }
+
+      this.setState({lanes});
     }
-
 }
 
 export default alt.createStore(LaneStore, 'LaneStore');

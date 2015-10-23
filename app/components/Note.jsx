@@ -4,33 +4,39 @@ import ItemTypes from '../constants/itemTypes';
 
 const noteSource = {
   beginDrag(props) {
-      console.log('begin dragging note', props);
-
-      return {};
+    return {
+      id: props.id
+    }
   }
 };
-const noteTarget = {
-    hover(targetProps, monitor) {
-        const sourceProps = monitor.getItem();
 
-        console.log('dragging note', sourceProps, targetProps);
+const noteTarget = {
+  hover(targetProps, monitor) {
+    const targetId = targetProps.id;
+    const sourceProps = monitor.getItem();
+    const sourceId = sourceProps.id;
+
+    if(sourceId !== targetId) {
+      targetProps.onMove({sourceId, targetId});
     }
+  }
 };
+
 @DragSource(ItemTypes.NOTE, noteSource, (connect) => ({
   connectDragSource: connect.dragSource()
 }))
 @DropTarget(ItemTypes.NOTE, noteTarget, (connect) => ({
-    connectDropTarget: connect.dropTarget()
+  connectDropTarget: connect.dropTarget()
 }))
 
 export default class Note extends React.Component {
 
-    render() {
-        const {connectDragSource, connectDropTarget,
-                id, onMove, ...props} = this.props;
+  render() {
+    const {connectDragSource, connectDropTarget,
+      id, onMove, ...props} = this.props;
 
-        return connectDragSource(connectDropTarget(
-            <li {...this.props}>{this.props.children}</li>
-        ));
-    }
+    return connectDragSource(connectDropTarget(
+      <li {...this.props}>{this.props.children}</li>
+    ));
+  }
 }
