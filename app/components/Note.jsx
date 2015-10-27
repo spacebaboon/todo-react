@@ -6,7 +6,10 @@ const noteSource = {
   beginDrag(props) {
     return {
       id: props.id
-    }
+    };
+  },
+  isDragging(props, monitor) {
+    return props.id === monitor.getItem().id;
   }
 };
 
@@ -16,14 +19,15 @@ const noteTarget = {
     const sourceProps = monitor.getItem();
     const sourceId = sourceProps.id;
 
-    if(sourceId !== targetId) {
+    if (sourceId !== targetId) {
       targetProps.onMove({sourceId, targetId});
     }
   }
 };
 
-@DragSource(ItemTypes.NOTE, noteSource, (connect) => ({
-  connectDragSource: connect.dragSource()
+@DragSource(ItemTypes.NOTE, noteSource, (connect, monitor) => ({
+  connectDragSource: connect.dragSource(),
+  isDragging: monitor.isDragging()
 }))
 @DropTarget(ItemTypes.NOTE, noteTarget, (connect) => ({
   connectDropTarget: connect.dropTarget()
@@ -32,11 +36,13 @@ const noteTarget = {
 export default class Note extends React.Component {
 
   render() {
-    const {connectDragSource, connectDropTarget,
-      id, onMove, ...props} = this.props;
+    const {connectDragSource, connectDropTarget, isDragging,
+      onMove, id, ...props} = this.props;
 
     return connectDragSource(connectDropTarget(
-      <li {...this.props}>{this.props.children}</li>
+      <li style={{
+        opacity: isDragging ? 0 : 1
+      }} {...this.props}>{this.props.children}</li>
     ));
   }
 }
